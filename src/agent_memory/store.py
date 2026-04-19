@@ -18,14 +18,16 @@ Design notes
 
 from __future__ import annotations
 
+import builtins
 import json
 import sqlite3
 import threading
 import time
 import uuid
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any
 
 import numpy as np
 
@@ -67,11 +69,11 @@ class Memory:
     id: str
     namespace: str
     content: str
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
     created_at: float = 0.0
-    expires_at: Optional[float] = None
+    expires_at: float | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
@@ -82,7 +84,7 @@ class SearchResult:
     memory: Memory
     score: float
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {"memory": self.memory.to_dict(), "score": self.score}
 
 
@@ -105,8 +107,8 @@ class MemoryStore:
 
     def __init__(
         self,
-        path: Union[str, Path] = "agent_memory.db",
-        embedder: Optional[Embedder] = None,
+        path: str | Path = "agent_memory.db",
+        embedder: Embedder | None = None,
         namespace: str = DEFAULT_NAMESPACE,
     ) -> None:
         self.path = str(path)
@@ -177,10 +179,10 @@ class MemoryStore:
         self,
         content: str,
         *,
-        namespace: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        ttl: Optional[float] = None,
-        id: Optional[str] = None,
+        namespace: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        ttl: float | None = None,
+        id: str | None = None,
     ) -> Memory:
         """Store a memory. Returns the :class:`Memory` row that was written.
 
@@ -235,10 +237,10 @@ class MemoryStore:
         self,
         contents: Sequence[str],
         *,
-        namespace: Optional[str] = None,
-        metadatas: Optional[Sequence[Dict[str, Any]]] = None,
-        ttl: Optional[float] = None,
-    ) -> List[Memory]:
+        namespace: str | None = None,
+        metadatas: Sequence[dict[str, Any]] | None = None,
+        ttl: float | None = None,
+    ) -> builtins.list[Memory]:
         """Batch-insert memories. Embeddings are computed in one call."""
         if not contents:
             return []
@@ -254,7 +256,7 @@ class MemoryStore:
                 self.embedder.partial_fit(c)
 
         vectors = self.embedder.embed(list(contents)).astype(np.float32)
-        memories: List[Memory] = []
+        memories: list[Memory] = []
         rows = []
         for idx, content in enumerate(contents):
             mem_id = uuid.uuid4().hex
@@ -302,7 +304,7 @@ class MemoryStore:
             self._conn.commit()
             return cur.rowcount > 0
 
-    def clear(self, namespace: Optional[str] = None) -> int:
+    def clear(self, namespace: str | None = None) -> int:
         """Clear a namespace (or the whole store when ``namespace`` is None)."""
         with self._lock:
             if namespace is None:
@@ -327,7 +329,7 @@ class MemoryStore:
 
     # ----------------------------------------------------------------- reads
 
-    def get(self, memory_id: str) -> Optional[Memory]:
+    def get(self, memory_id: str) -> Memory | None:
         row = self._conn.execute(
             """
             SELECT id, namespace, content, metadata, embedding, created_at, expires_at
@@ -343,10 +345,10 @@ class MemoryStore:
 
     def list(
         self,
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         limit: int = 100,
         offset: int = 0,
-    ) -> List[Memory]:
+    ) -> builtins.list[Memory]:
         ns = namespace or self.default_namespace
         now = self._now()
         rows = self._conn.execute(
@@ -361,7 +363,7 @@ class MemoryStore:
         ).fetchall()
         return [self._row_to_memory(r) for r in rows]
 
-    def count(self, namespace: Optional[str] = None) -> int:
+    def count(self, namespace: str | None = None) -> int:
         now = self._now()
         if namespace is None:
             row = self._conn.execute(
@@ -378,7 +380,7 @@ class MemoryStore:
             ).fetchone()
         return int(row[0])
 
-    def namespaces(self) -> List[str]:
+    def namespaces(self) -> builtins.list[str]:
         now = self._now()
         rows = self._conn.execute(
             """
@@ -394,11 +396,11 @@ class MemoryStore:
         self,
         query: str,
         *,
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         limit: int = 5,
         min_score: float = 0.0,
-        metadata_filter: Optional[Dict[str, Any]] = None,
-    ) -> List[SearchResult]:
+        metadata_filter: dict[str, Any] | None = None,
+    ) -> builtins.list[SearchResult]:
         """Return the top ``limit`` memories most similar to ``query``.
 
         ``metadata_filter`` is a simple equality filter: every key must match
@@ -443,7 +445,7 @@ class MemoryStore:
             top = np.argpartition(-scores, k - 1)[:k]
             order = top[np.argsort(-scores[top])]
 
-        results: List[SearchResult] = []
+        results: list[SearchResult] = []
         for i in order[:limit]:
             score = float(scores[i])
             if score < min_score:
@@ -457,7 +459,7 @@ class MemoryStore:
         with self._lock:
             self._conn.close()
 
-    def __enter__(self) -> "MemoryStore":
+    def __enter__(self) -> MemoryStore:
         return self
 
     def __exit__(self, exc_type, exc, tb) -> None:

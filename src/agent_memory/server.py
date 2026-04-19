@@ -66,7 +66,7 @@ class StatsOut(BaseModel):
     dim: int
 
 
-def create_app(store: MemoryStore) -> "FastAPI":
+def create_app(store: MemoryStore) -> FastAPI:
     app = FastAPI(
         title="agent-memory",
         description="Persistent vector memory for AI agents.",
@@ -77,7 +77,7 @@ def create_app(store: MemoryStore) -> "FastAPI":
         return store
 
     @app.get("/health")
-    def health() -> Dict[str, str]:
+    def health() -> dict[str, str]:
         return {"status": "ok"}
 
     @app.get("/stats", response_model=StatsOut)
@@ -102,26 +102,26 @@ def create_app(store: MemoryStore) -> "FastAPI":
                 id=body.id,
             )
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            raise HTTPException(status_code=400, detail=str(e)) from e
         return MemoryOut(**mem.to_dict())
 
-    @app.get("/memories", response_model=List[MemoryOut])
+    @app.get("/memories", response_model=list[MemoryOut])
     def list_memories(
         namespace: Optional[str] = None,
         limit: int = Query(100, ge=1, le=1000),
         offset: int = Query(0, ge=0),
         s: MemoryStore = Depends(get_store),
-    ) -> List[MemoryOut]:
+    ) -> list[MemoryOut]:
         return [MemoryOut(**m.to_dict()) for m in s.list(namespace=namespace, limit=limit, offset=offset)]
 
-    @app.get("/memories/search", response_model=List[SearchResultOut])
+    @app.get("/memories/search", response_model=list[SearchResultOut])
     def search_memories(
         q: str = Query(..., description="Query text."),
         namespace: Optional[str] = None,
         limit: int = Query(5, ge=1, le=100),
         min_score: float = Query(0.0, ge=-1.0, le=1.0),
         s: MemoryStore = Depends(get_store),
-    ) -> List[SearchResultOut]:
+    ) -> list[SearchResultOut]:
         results = s.search(q, namespace=namespace, limit=limit, min_score=min_score)
         return [
             SearchResultOut(memory=MemoryOut(**r.memory.to_dict()), score=r.score)
@@ -141,7 +141,7 @@ def create_app(store: MemoryStore) -> "FastAPI":
             raise HTTPException(status_code=404, detail="memory not found")
 
     @app.post("/prune")
-    def prune_memories(s: MemoryStore = Depends(get_store)) -> Dict[str, int]:
+    def prune_memories(s: MemoryStore = Depends(get_store)) -> dict[str, int]:
         return {"pruned": s.prune()}
 
     return app

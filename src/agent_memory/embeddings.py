@@ -15,19 +15,18 @@ normalized so that dot-product equals cosine similarity.
 
 from __future__ import annotations
 
-import math
 import pickle
 import re
 from collections import Counter
-from typing import Iterable, List, Optional, Protocol, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Protocol
 
 import numpy as np
-
 
 _TOKEN_RE = re.compile(r"[A-Za-z0-9_]+")
 
 
-def _tokenize(text: str) -> List[str]:
+def _tokenize(text: str) -> list[str]:
     return [t.lower() for t in _TOKEN_RE.findall(text)]
 
 
@@ -48,7 +47,7 @@ class Embedder(Protocol):
     def serialize(self) -> bytes: ...
 
     @classmethod
-    def deserialize(cls, payload: bytes) -> "Embedder": ...
+    def deserialize(cls, payload: bytes) -> Embedder: ...
 
 
 class SentenceTransformerEmbedder:
@@ -84,7 +83,7 @@ class SentenceTransformerEmbedder:
         return pickle.dumps({"model_name": self.model_name})
 
     @classmethod
-    def deserialize(cls, payload: bytes) -> "SentenceTransformerEmbedder":
+    def deserialize(cls, payload: bytes) -> SentenceTransformerEmbedder:
         data = pickle.loads(payload)
         return cls(model_name=data["model_name"])
 
@@ -102,7 +101,7 @@ class TfidfEmbedder:
     def __init__(
         self,
         dim: int = 512,
-        corpus: Optional[Iterable[str]] = None,
+        corpus: Iterable[str] | None = None,
     ) -> None:
         self.dim = dim
         self.name = f"tfidf:{dim}"
@@ -120,7 +119,7 @@ class TfidfEmbedder:
             h = ((h ^ ch) * 16777619) & 0xFFFFFFFF
         return h % self.dim
 
-    def fit(self, corpus: Iterable[str]) -> "TfidfEmbedder":
+    def fit(self, corpus: Iterable[str]) -> TfidfEmbedder:
         for text in corpus:
             tokens = set(_tokenize(text))
             if not tokens:
@@ -168,7 +167,7 @@ class TfidfEmbedder:
         )
 
     @classmethod
-    def deserialize(cls, payload: bytes) -> "TfidfEmbedder":
+    def deserialize(cls, payload: bytes) -> TfidfEmbedder:
         data = pickle.loads(payload)
         emb = cls(dim=data["dim"])
         emb._df = data["df"].astype(np.float32)
