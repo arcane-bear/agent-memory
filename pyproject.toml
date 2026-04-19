@@ -1,0 +1,89 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-memory"
+version = "0.1.0"
+description = "Lightweight persistent memory for AI agents — vector search over SQLite, with a REST server and a drop-in Python library."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+authors = [{ name = "arcane-bear" }]
+keywords = [
+    "ai",
+    "agents",
+    "memory",
+    "vector-database",
+    "embeddings",
+    "llm",
+    "rag",
+    "sqlite",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "numpy>=1.22",
+]
+
+[project.optional-dependencies]
+server = [
+    "fastapi>=0.100",
+    "uvicorn[standard]>=0.23",
+    "pydantic>=2.0",
+]
+st = [
+    "sentence-transformers>=2.2",
+]
+dev = [
+    "pytest>=7.4",
+    "httpx>=0.25",
+    "fastapi>=0.100",
+    "uvicorn>=0.23",
+    "pydantic>=2.0",
+    "ruff>=0.3",
+]
+
+[project.urls]
+Homepage = "https://github.com/arcane-bear/agent-memory"
+Repository = "https://github.com/arcane-bear/agent-memory"
+Issues = "https://github.com/arcane-bear/agent-memory/issues"
+
+[project.scripts]
+agent-memory = "agent_memory.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_memory"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/agent_memory",
+    "tests",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
