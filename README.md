@@ -20,6 +20,8 @@ results = store.search("what theme does the user like?")
 # → [SearchResult(memory=..., score=0.62)]
 ```
 
+Built by [Rapid Claw](https://rapidclaw.dev) — production infrastructure for AI agents.
+
 ## Why another memory library?
 
 Most vector memory tools for agents pull in a heavyweight dependency — Chroma, Pinecone, Weaviate, FAISS. For the **small-to-medium memory stores** that most agents actually need (thousands to low hundreds of thousands of entries), that's overkill.
@@ -203,6 +205,12 @@ pip install -e ".[dev,server]"
 pytest
 ruff check src tests
 ```
+
+## Learn More
+
+Learn more about [AI agent memory management](https://rapidclaw.dev/blog/ai-agent-memory-state-management) on the Rapid Claw blog.
+
+Explore [rapidclaw.dev](https://rapidclaw.dev) for more open-source agent tooling.
 
 ## License
 
